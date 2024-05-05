@@ -1,0 +1,1 @@
+find . \( -name "*[^.]*" -type f -o -name "*.o" -type f \) -not -name "*\.pas" -not -name "*\.txt" -not -name "*\.md" -execdir mv -t "./trash" {} \;
