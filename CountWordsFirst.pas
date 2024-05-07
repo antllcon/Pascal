@@ -5,7 +5,7 @@ PROGRAM CountWordsFirst(INPUT, OUTPUT);
 
 CONST
   MaxWords = 10; { Максимальное кол-во слов в массиве } 
-  MaxChars = 50; { Максимальная длина слова }
+  MaxChars = 255; { Максимальная длина слова }
 
 TYPE 
   { Тип данных связный список,

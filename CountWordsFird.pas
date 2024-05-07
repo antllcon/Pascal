@@ -1,18 +1,20 @@
-PROGRAM CountWordsSecond(INPUT, OUTPUT);
-{ Программа вывода в терминал искуственно инициализированного 
-  содержимого переменной связного списка, которая хранит какие-то
+PROGRAM CountWordsFird(INPUT, OUTPUT);
+{ Программа вывода в файл statistic.txt содержимого входного файла .txt
+  обрабатваемого переменной связного списка, которая хранит какие-то
   слова в формате  (слово, количество) }
 
 CONST
-  MaxWords = 6; { Максимальное кол-во слов в массиве } 
+  MaxWords = 10000; { Максимальное кол-во слов в массиве } 
   MaxChars = 100; { Максимальная длина слова 50 символов }
 
 TYPE 
   { Тип данных связный список,
     состоящий из слова (массив символов от 1 до 50)
     и числа (кол-во повторений слова в тексте) } 
+  
+  WordType =  ARRAY[1 .. MaxChars] OF CHAR;
   ListOfWordCounts = RECORD 
-                      Word: ARRAY[1 .. MaxChars] OF CHAR;
+                      Node: WordType;
                       Count: INTEGER;
                     END;
 
@@ -21,8 +23,13 @@ TYPE
 
 VAR
   DataWords: DataArrays;   { Переменная массива связных списков }
+  TextFile: TEXT;          { Переменная для работы с выходным файлом }
   ArrayWordCount: INTEGER; { Счетчик количества слов в массиве }
   i, j: INTEGER;           { Счетчики для циклов FOR }
+  FileSoure: STRING;       { Переменная расположения файла }
+  Ch: CHAR;                { Переменная для чтения слов символами }
+  Word: STRING;          { Переменная слова }
+  Finished: BOOLEAN;
 
 { Инициализация всех слов пробелами }
 PROCEDURE InitialisationWordsArrays(VAR DataArray: DataArrays);
@@ -33,8 +40,15 @@ BEGIN
       DataArray[i].Count := 0;
       FOR j := 1 TO MaxChars 
       DO
-        DataArray[i].Word[j] := ' '
+        DataArray[i].Node[j] := ' '
     END 
+END;
+
+PROCEDURE InitialisationWord(VAR WordArray: WordType);
+BEGIN
+  FOR i := 1 TO MaxChars
+  DO
+    WordArray[i] := ' '
 END;
 
 { Вывод значений массива связного списка }
@@ -44,16 +58,16 @@ BEGIN
   DO
     BEGIN
       j := 1;
-      WHILE (j <= MaxChars) AND (DataArray[i].Word[j] <> ' ') DO
+      WHILE (j <= MaxChars) AND (DataArray[i].Node[j] <> ' ') DO
       BEGIN
-        WRITE(OutFile, DataArray[i].Word[j]);
+        WRITE(OutFile, DataArray[i].Node[j]);
         j := j + 1
     END;
     WRITELN(OutFile, ' ', DataArray[i].Count);
   END
 END;
 
-FUNCTION FindWordInArray(VAR DataArray: DataArrays; Word: STRING): INTEGER;
+FUNCTION FindWordInArray(VAR DataArray: DataArrays; Word: WordType): INTEGER;
 VAR
   Find: BOOLEAN; { Найдено слово или нет? } 
   i, j: INTEGER; { Переменные счетчиков }
@@ -67,12 +81,13 @@ BEGIN
   FindWordInArray := 0; { Если слова нет, то вернет 0 }
   FOR i := 1 TO ArrayWordCount
   DO
+ 
     BEGIN
       Find := TRUE;
       FOR j := 1 TO Length(Word) // Уточнить можно ли использовать?
       DO
         BEGIN
-          IF DataArray[i].Word[j] <> Word[j] // Уточнить можно ли оптимизировать?
+          IF DataArray[i].Node[j] <> Word[j] // Уточнить можно ли оптимизировать?
           THEN
             BEGIN
               Find := FALSE;
@@ -91,7 +106,7 @@ BEGIN
 END;
 
 { Добавление слова в массив, с проверкой на дублирование }
-PROCEDURE AddWordToArray(VAR DataArray: DataArrays; VAR ArrayWordCount: INTEGER; Word: STRING);
+PROCEDURE AddWordToArray(VAR DataArray: DataArrays; VAR ArrayWordCount: INTEGER; Word: WordType);
 VAR
   Index: INTEGER; { Переменная которая будет хранить положение слова, если оно найдено в массиве }
   j: INTEGER;     { Переменная счетчика }
@@ -112,7 +127,7 @@ BEGIN
         ArrayWordCount := ArrayWordCount + 1;
         FOR j := 1 TO Length(Word)
         DO
-          DataArray[ArrayWordCount].Word[j] := Word[j];
+          DataArray[ArrayWordCount].Node[j] := Word[j];
         DataArray[ArrayWordCount].Count := 1
       END
     ELSE
@@ -128,25 +143,53 @@ BEGIN
   { Описание программы }
   WRITELN;
   WRITELN('[   Тестовая программа вывода слов и их кол-ва в тексте    ]');
-  WRITELN('[ Проверка на дублирование слова и добавление его в массив ]');
-  WRITELN('                    Приближение - №1.2                      ');
+  WRITELN('[ Запись из файла и обработка слова относительно значения  ]');
+  WRITELN('                    Приближение - №1.3                      ');
   WRITELN;
 
   { Инициализация }
   InitialisationWordsArrays(DataWords);
   ArrayWordCount := 0;
-
+  Word := '';
+  FileSoure := 'poem.txt'; { Расположение файла }
+  ASSIGN(TextFile, FileSoure);
+  RESET(TextFile);
   { Мы как-то получаем слова из текстового файла }
-  
+  Finished := FALSE;
+
+  WHILE NOT(EOF(TextFile)) AND (NOT Finished) 
+  DO 
+    BEGIN
+      WHILE NOT(EOLN(TextFile)) AND (NOT Finished)
+      DO
+        BEGIN
+          READ(TextFile, Ch);
+          j := 1;
+          InitialisationWord(Word);
+          WHILE (Ch <> ' ') AND (NOT Finished) 
+          DO
+            BEGIN
+              j := j + 1;
+              Word[j] := Ch;
+              READ(TextFile, Ch)
+            END;
+          AddWordToArray(DataWords, ArrayWordCount, Word)
+        END;
+      IF NOT(EOF(TextFile)) 
+      THEN
+        READLN(TextFile)
+    END;
+
   { Инкремент счетчика или запись нового слова}
-  AddWordToArray(DataWords, ArrayWordCount, 'груша');
-  AddWordToArray(DataWords, ArrayWordCount, 'груша');
-  AddWordToArray(DataWords, ArrayWordCount, 'киви');
-  AddWordToArray(DataWords, ArrayWordCount, 'лимон');
+  // AddWordToArray(DataWords, ArrayWordCount, 'груша');
+  // AddWordToArray(DataWords, ArrayWordCount, 'киви');
+  // AddWordToArray(DataWords, ArrayWordCount, 'лимон');
   // AddWordToArray(DataWords, ArrayWordCount, 'яблоко');
   // AddWordToArray(DataWords, ArrayWordCount, 'банан');
   // AddWordToArray(DataWords, ArrayWordCount, 'мандарин');
   
+
+
   { Проверка наличия слов в массиве }
   IF ArrayWordCount > 0
   THEN
@@ -156,5 +199,6 @@ BEGIN
 
   { Вывод данных }
   WriteMas(OUTPUT, ArrayWordCount, DataWords);
-  WRITELN
+  WRITELN;
+  CLOSE(TextFile)
 END.
